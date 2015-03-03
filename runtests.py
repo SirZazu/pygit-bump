@@ -2,6 +2,7 @@ import subprocess
 import unittest
 import shutil
 import os
+import sys
 
 from pygitbump import PyGitBump, Error
 
@@ -42,7 +43,10 @@ def prepare_git_repo():
     subprocess.check_call('git commit -m "initial commit"', shell=True)
     # create another branch to allow merging
     subprocess.check_call('git checkout -b %s' % devel, shell=True)
-    print('Finished preparing test git repository\n', '-' * 70 )
+    print('Finished preparing test git repository')
+    print('-' * 70)
+    print('You may see not only dots below ;) Nothing to worry about!')
+    print('-' * 70)
 
 
 def clear():
@@ -50,7 +54,7 @@ def clear():
     Remove git repository after tests.
     """
     shutil.rmtree(wdir)
-    print("\nRemoving Git repository.\nDone")
+    print("\nRemoving Git repository... Done")
 
 
 class PyGitBumpTestCase(unittest.TestCase):
@@ -86,7 +90,8 @@ class PyGitBumpTestCase(unittest.TestCase):
         self.assertEqual(self.pgb.shell_cmd('echo Test'), 'Test\n')
         with self.assertRaises(Error) as PGBE:
             self.pgb.shell_cmd('Test')
-        self.assertEqual(PGBE.exception.message, '\n[PyGit-Bump] Error while executing command [Test]\n')
+        text = '\n[PyGit-Bump] Error while executing command [Test]\n'
+        self.assertEqual(PGBE.exception.message, text)
 
     def test_check_branch(self):
         self.assertFalse(self.pgb.check_branch())
@@ -94,6 +99,23 @@ class PyGitBumpTestCase(unittest.TestCase):
         self.assertTrue(self.pgb.check_branch())
         subprocess.check_call('git checkout %s' % devel, shell=True)
 
+    def test_get_config_value(self):
+        self.assertEqual(self.pgb.get_config_value('branch'), 'TestMaster')
+        self.assertEqual(self.pgb.get_config_value('path'), 'version.__version__')
+
+    def test_set_working_dir(self):
+        os.chdir('./.git/hooks')
+        self.pgb.set_working_dir()
+        self.assertEqual(self.pgb.pwd, wdir)
+        self.assertIn(wdir, sys.path)
+
+    def test_validate_path(self):
+        self.pgb.pwd = wdir
+        self.pgb.validate_path()
+        self.assertEqual(self.pgb.var_name, '__version__')
+        self.assertIn(self.pgb.curr_ver, ('0.0.1', '0.0.2'))
+        self.assertEqual(self.pgb.file_path, wdir + '/version.py')
+        self.assertEqual(self.pgb.index, 1)
 
 
 if __name__ == '__main__':
