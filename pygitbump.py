@@ -107,24 +107,26 @@ class PyGitBump(object):
 
 
 if __name__ == "__main__":
-    # When git hooks are invoked, stdin is pointed to /dev/null.
-    # The work-around is to re-assign stdin back to /dev/tty.
-    sys.stdin = open('/dev/tty', 'r')
+    # check if this is python 2. If not, do nothing!
+    if sys.version_info[:1] == (2,):
+        # When git hooks are invoked, stdin is pointed to /dev/null.
+        # The work-around is to re-assign stdin back to /dev/tty.
+        sys.stdin = open('/dev/tty', 'r')
 
-    try:
-        pgb = PyGitBump()
-        pgb.set_working_dir()
-        # check if current branch is targeted branch, if not do nothing
-        if pgb.check_branch():
-            pgb.validate_path()
-            print '\n', # for better formating
-            while True:
-                choice = raw_input(pgb.ask_txt())
-                if choice in ('y', 'Y'):
-                    new_ver = raw_input(pgb.ask_ver_txt())
-                    pgb.bump(new_ver)
-                    break
-                elif choice in ('n', 'N', ''):
-                    break
-    except Error, e:
-        print e
+        try:
+            pgb = PyGitBump()
+            pgb.set_working_dir()
+            # check if current branch is targeted branch, if not do nothing
+            if pgb.check_branch():
+                pgb.validate_path()
+                print '\n', # for better formating
+                while True:
+                    choice = raw_input(pgb.ask_txt())
+                    if choice in ('y', 'Y'):
+                        new_ver = raw_input(pgb.ask_ver_txt())
+                        pgb.bump(new_ver)
+                        break
+                    elif choice in ('n', 'N', ''):
+                        break
+        except Error, e:
+            print e
